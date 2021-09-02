@@ -1,0 +1,89 @@
+Fist of all create a table name(Brewaries) in DB with below fields in place . Field name and example values given in below json.
+
+Example of Input record
+{
+  id: 5494,
+  name: "MadTree Brewing",
+  brewery_type: "regional",
+  street: "3301 Madison Rd",
+  address_2: null,
+  address_3: null,
+  city: "Cincinnati",
+  county_province: null,
+  state: "Ohio",
+  postal_code: "45209-1132",
+  country: "United States",
+  longitude: "-84.4239715",
+  latitude: "39.1563725",
+  phone: "5138368733",
+  website_url: "http://www.madtreebrewing.com",
+  updated_at: "2018-08-24T15:44:22.281Z",
+  created_at: "2018-08-23T23:24:11.758Z"
+}
+
+Example of output record
+{
+  id: 5494,
+  name: "MadTree Brewing",
+  brewery_type: "regional",
+  street: "3301 Madison Rd",
+  address_2: null, --> Print this value as "address_exist", if the street value is not null 
+  address_3: null, 
+  city: "Cincinnati",
+  state: "Ohio",
+  postal_code: "45209-1132",  --> Get the postal code only before "-", if it exists (ex: 45209)
+  country: "United States",
+  longitude: "-84.4239715", --> Make it to whole number (ex: -84)
+  latitude: "39.1563725", --> Make it to whole number (ex: 39)
+  phone: "5138368733", --> Print only last 5 digit, if it exist
+  updated_at: "2018-08-24T15:44:22.281Z", --> Print only date from this and ignore time (ex: 2018-08-24)
+  created_at: "2018-08-23T23:24:11.758Z" --> Print only date from this and ignore time (ex: 2018-08-24)
+}
+
+Error output:
+{
+errorCode: xxx,
+errorType:
+errorDescription:
+correlationId:
+}
+
+
+RAML Should have below methods and operations. Create folders as example(success, error), datatype under design center. 
+Use traits for client_id enforcement policy. Make your raml clean and neat to read it easily. 
+
+
+/GET ---> Based on input parameters , output should give array of "Example of output record" 
+
+brewary/states=?&source=? --> This would expect inputs of multiple districts (ex:ohio,Texas) and source (it can be from api or db). If no source field is given , it should take api as source by default. 
+
+brewary/cities=?&source=? --> This would expect inputs of multiple cities (ex:Austin,Boulder) and source (it can be from api or db).If no source field is given ,it should take api  as source by default. 
+
+brewary/state=?&city=? --> This should list the brewaries, which is combination of Id and City 
+
+
+/POST
+brewary/create  --> This would expect input as "Example of Input record" (Single record at a time) and inserts into DB with table name "Brewaries"
+
+
+/DELETE
+brewary/id  --> This should delete particular brewary record from db,  based on the Id provided as part of the input. 
+
+
+Source:
+api : https://www.openbrewerydb.org/documentation/01-listbreweries  --> This URL has all the functionalities which are needed to perform above job.
+
+
+Design :
+
+Have below layers:
+Experience to get all the method details - brewray-eapi
+Process layer to perform any logics or transformation - brewary-papi
+System layer : Have 2 system layers , one for API and one for DB - brewary-api-sapi, brewary-db-sapi
+
+
+Deploy:
+
+api discoveryId
+
+apply policy -> clientId enforcement

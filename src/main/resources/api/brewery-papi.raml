@@ -1,0 +1,119 @@
+#%RAML 1.0
+title: brewery-papi
+description: This is experience layer to write logic/transormations and redirecting them to server or db.
+version: 1.0
+baseUri: http://localhost:8083/api
+uses:
+  brewery_datatype: brewery_datatype.raml
+traits:
+  security_header: !include security_header.raml
+/brewery:
+  post:
+    body:
+      application/json:
+        type: brewery_datatype.create_brewery_request
+        example: !include example/response_post.json
+    responses:
+      201:
+        body:
+          application/json:
+            example: !include example/201-success-resp.json
+      400:
+        body:
+          application/json:
+            example: !include example/400-bad-req.json
+      401:
+        body:
+          application/json:
+            example: !include example/401-unauthorised.json
+      404:
+        body:
+          application/json:
+            example: !include example/404-not-found.json
+      405:
+        body:
+          application/json:
+            example: !include example/405-method-not-allowed.json
+      500:
+        body:
+          application/json:
+            example: !include example/500-server-error.json
+  get:
+    is: [security_header]
+    queryParameters:
+      state: 
+        type: string
+        required: false
+      city:
+        type: string
+        required: false
+      states: 
+        type: string
+        required: false
+      cities:
+        type: string
+        required: false
+      source:
+        enum:
+          - api
+          - db
+        required: false
+    responses:
+      200:
+        body:
+          application/json:
+            example: !include example/200-ok-req.json
+      400:
+        body:
+          application/json:
+            example: !include example/400-bad-req.json
+      401:
+        body:
+          application/json:
+            example: !include example/401-unauthorised.json
+      404:
+        body:
+          application/json:
+            example: !include example/404-not-found.json
+      405:
+        body:
+          application/json:
+            example: !include example/405-method-not-allowed.json
+      500:
+        body:
+          application/json:
+            example: !include example/500-server-error.json
+  /{id}:
+    delete:
+      responses:
+        200:
+          body:
+            application/json:
+              example: !include example/200-ok-req.json
+        400:
+          body:
+            application/json:
+              example: !include example/400-bad-req.json
+        401:
+          body:
+            application/json:
+              example: !include example/401-unauthorised.json
+        404:
+          body:
+            application/json:
+              example: !include example/404-not-found.json
+        405:
+          body:
+            application/json:
+              example: !include example/405-method-not-allowed.json
+        500:
+          body:
+            application/json:
+              example: !include example/500-server-error.json
+    
+
+    
+  
+          
+
+    

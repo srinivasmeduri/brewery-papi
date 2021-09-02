@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" >
+	<flow name="brewery-papi-implementation-Get" doc:id="6d906769-423c-485f-8ae5-ad695e9076b5">
+		<logger level="INFO" doc:name="Logger" doc:id="208182e2-73dc-424e-a50f-f479ed80bbb0" message='#["before papi request"]' />
+		<choice doc:name="Choice" doc:id="99c9de59-0758-4b13-9ed7-111e80619e51">
+			<when expression="#[(attributes.queryParams.state !=null) and (attributes.queryParams.city !=null)]">
+				<http:request method="GET" doc:name="Cty and State Request" doc:id="6a1aa097-a0af-4333-ad57-fa13ce9cf643" path="/${http.pathapi}/${http.path}" responseTimeout="#[80000000]" config-ref="HTTP_Request_db_configuration">
+					<http:headers><![CDATA[#[output application/java
+---
+{
+	"client_secret" : "asdsfsfffsdee",
+	"client_id" : "ksalfdjsfijioj"
+}]]]></http:headers>
+					<http:query-params><![CDATA[#[output application/java
+---
+{
+	"state" : attributes.queryParams.state,
+	"city" : attributes.queryParams.city
+}]]]></http:query-params>
+				</http:request>
+				<ee:transform doc:name="payload" doc:id="4c5ac584-9cfa-4a1f-aadc-00d8dcd1e1fb">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<when expression='#[(attributes.queryParams.states !=null) or (attributes.queryParams.cities !=null) and (attributes.queryParams.source=="db")]'>
+				<choice doc:name="DB Choice" doc:id="0a3fb454-2cd1-4185-83bc-04315196ea0c">
+					<when expression='#[(attributes.queryParams.states != null) and (attributes.queryParams.source == "db")]'>
+						<http:request method="GET" doc:name="States DB Request" doc:id="1131ce70-2b33-4c71-9751-9917ec263ea2" path="/${http.pathapi}/${http.path}" responseTimeout="#[50000000]" config-ref="HTTP_Request_db_configuration">
+							<http:headers><![CDATA[#[output application/java
+---
+{
+	"client_secret" : "oweyirpqwwe4",
+	"client_id" : "dfsfddiomewr"
+}]]]></http:headers>
+							<http:query-params><![CDATA[#[output application/java
+---
+{
+	"states" : attributes.queryParams.states
+}]]]></http:query-params>
+						</http:request>
+						<logger level="INFO" doc:name="Logger" doc:id="5907b245-ce2a-4df4-8cf3-a3260a4dcb44" message='#["I am in the source db"]' />
+					</when>
+					<when expression='#[(attributes.queryParams.cities !=null) and (attributes.queryParams.source == "db")]'>
+						<http:request method="GET" doc:name="Cities DB Request" doc:id="ad7e7c83-0dd3-4ca8-b0b5-ded5b9d7de3b" path="/${http.pathapi}/${http.path}" responseTimeout="500000000" config-ref="HTTP_Request_db_configuration">
+							<http:headers><![CDATA[#[output application/java
+---
+{
+	"client_secret" : "poiwrqlitkm",
+	"client_id" : "kwjiwijflkfse"
+}]]]></http:headers>
+							<http:query-params><![CDATA[#[output application/java
+---
+{
+	"cities" : attributes.queryParams.cities
+}]]]></http:query-params>
+						</http:request>
+						<logger level="INFO" doc:name="Logger" doc:id="f22c5e6e-01e2-4a5d-bdb8-83cdf9ef0adc" message='#["cities data is retrieving...."]' />
+					</when>
+					<otherwise>
+						<logger level="INFO" doc:name="Logger" doc:id="150521a4-5baf-4fc9-81cb-a10693a4e1c8" message='#["choice in choice default in DB"]'/>
+					</otherwise>
+				</choice>
+				<ee:transform doc:name="Filtered Payload" doc:id="e72f3292-e2be-426d-ac11-33a84b129a2c">
+							<ee:message>
+								<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload map {
+    "id": $.id,
+    "name": $.name,
+    "brewery_type": $.brewery_type,
+    "street": $.street != null,
+    "address_2": if($.address_2 != null) "address_exist" else $.address_2,
+    "address_3": $.address_3,
+    "city": $.city,
+    "county_province": $.county_province,
+    "state": $.state,
+    "postal_code": ($.postal_code splitBy "-")[0],
+    "country": $.country,
+    "longitude": if($.longitude != "null") ceil($.longitude) else null,
+    "latitude": if($.latitude != "null") floor($.latitude) else null,
+    "phone": if($.phone != null) $.phone[-5 to -1] else($.phone),
+    "website_url": $.website_url,
+    "updated_at": $.updated_at as DateTime as String {format: "yyyy-mm-dd"},
+    "created_at": $.created_at as DateTime as String {format: "yyyy-mm-dd"}
+}]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+			</when>
+			<when expression='#[(attributes.queryParams.apistates !=null) or (attributes.queryParams.apicities !=null) or (attributes.queryParams.source=="api")]'>
+				<choice doc:name="API Choice" doc:id="e269487e-1ed2-4343-8baa-f82ed6923630" >
+					<when expression='#[attributes.queryParams.apistates !=null]'>
+						<http:request method="GET" doc:name="API States Request" doc:id="2d5d1d80-68a1-49f5-85e2-3fe5cfb0184f" path="/${http.pathapi}/${http.path}" responseTimeout="#[5000000]" config-ref="HTTP_Request_API_configuration">
+							<http:headers ><![CDATA[#[output application/java
+---
+{
+	"client_secret" : "okknijosd4485",
+	"client_id" : "ioewi685pok5"
+}]]]></http:headers>
+							<http:query-params ><![CDATA[#[output application/java
+---
+{
+	"apistates" : attributes.queryParams.apistates
+}]]]></http:query-params>
+						</http:request>
+					</when>
+					<when expression='#[attributes.queryParams.apicities != null]'>
+						<http:request method="GET" doc:name="API Cities Request" doc:id="bcd07488-a840-449a-bed8-33cfc02f6afd" path="/${http.pathapi}/${http.path}" responseTimeout="#[50000000]" config-ref="HTTP_Request_API_configuration">
+							<http:headers ><![CDATA[#[output application/java
+---
+{
+	"client_secret" : "f557s5addfssf1",
+	"client_id" : "jfhfsf648dfs45"
+}]]]></http:headers>
+							<http:query-params ><![CDATA[#[output application/java
+---
+{
+	"source" : attributes.queryParams.source,
+	"apicities" : attributes.queryParams.apicities
+}]]]></http:query-params>
+						</http:request>
+					</when>
+					<otherwise >
+						<logger level="INFO" doc:name="Logger Default" doc:id="ef6646b6-37f4-4a85-8568-5735ddcde267" message='#["Logger Default....API"]'/>
+					</otherwise>
+				</choice>
+				<ee:transform doc:name="Filtered payload" doc:id="35605168-e0c5-484b-8b5e-862f0a9be4dc" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map {
+    "id": $.id,
+    "obdb_id": $.obdb_id,
+    "name": $.name,
+    "brewery_type": $.brewery_type,
+    "street": $.street != null,
+    "address_2": if($.address_2 != null) "address_exist" else $.address_2,
+    "address_3": $.address_3,
+    "city": $.city,
+    "county_province": $.county_province,
+    "state": $.state,
+    "postal_code": ($.postal_code splitBy "-")[0],
+    "country": $.country,
+    "longitude": if($.longitude != null) ceil($.longitude) else "null",
+    "latitude": if($.latitude != null) floor($.latitude) else "null",
+    "phone": if($.phone != null) $.phone[-5 to -1] else($.phone),
+    "website_url": $.website_url,
+    "updated_at": $.updated_at as DateTime as String {format: "yyyy-mm-dd"},
+    "created_at": $.created_at as DateTime as String {format: "yyyy-mm-dd"}
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="239b4201-8bba-4b74-b62c-42d15f21371c" message='#["Its in the default"]'/>
+			</otherwise>
+			</choice>
+			
+</flow>
+	<flow name="brewery-papi-implementation-post" doc:id="24ffe4f2-e9c0-46dd-adfd-5fe29febf235" >
+		<http:request method="POST" doc:name="Request" doc:id="2675cb7a-72ff-4552-bab9-d80a7394ba6a" config-ref="HTTP_Request_db_configuration" path="/${http.pathapi}/${http.path}" responseTimeout="#[5000000]"/>
+	</flow>
+	<flow name="brewery-papi-implementation-delete" doc:id="50b46481-3ab0-4943-bb9f-83025f1b9af4" >
+		<http:request method="DELETE" doc:name="Request" doc:id="30e27b20-7c84-4911-8d30-56ba1905318f" config-ref="HTTP_Request_db_configuration" path="/${http.pathapi}/${http.path}/{id}" responseTimeout="#[5000000]">
+			<http:uri-params ><![CDATA[#[output application/java
+---
+{
+	"id" : attributes.uriParams.id
+}]]]></http:uri-params>
+		</http:request>
+	</flow>
+		</mule>
